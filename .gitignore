@@ -13,9 +13,6 @@ __pycache__/
 .idea/
 .DS_Store
 
-# Dados brutos
-data/
-
 # Ignora o banco de dados
 db/chroma_db/
 
