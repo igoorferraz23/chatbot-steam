@@ -1,0 +1,12 @@
+# Manipulação de Dados
+pandas
+
+# LangChain e Integrações
+langchain
+langchain-core
+langchain-community
+langchain-ollama
+langchain-chroma
+
+# Ollama
+ollama

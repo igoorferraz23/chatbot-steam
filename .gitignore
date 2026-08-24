@@ -1,0 +1,27 @@
+# Ambientes virtuais
+.venv/
+venv/
+env/
+
+# Cache
+__pycache__/
+*.pyc
+*.log
+
+# VsCode
+.vscode/
+.idea/
+.DS_Store
+
+# Dados brutos
+data/
+
+# Ignora o banco de dados
+db/chroma_db/
+
+# Ignora os logs de chats
+chats/*
+
+# Permite a criação dos diretórios
+!chats/.gitkeep
+!db/.gitkeep
