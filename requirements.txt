@@ -10,3 +10,7 @@ langchain-chroma
 
 # Ollama
 ollama
+
+# API
+fastapi
+uvicorn

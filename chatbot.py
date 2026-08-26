@@ -5,82 +5,80 @@ from langchain_ollama import ChatOllama, OllamaEmbeddings
 from utils.chat_logger import ChatLogger
 from utils.tools import Tools
 
-# 1. Conecta ao ChromaDB e ao modelo de Embeddings
+# Configuração do LLM e Logger
+llm = ChatOllama(model="gemma3", temperature=0.3)
 
-# Download local do modelo de embeddings da Ollama.
+# Configuração do Embeddings
 Tools.download_ollama_model("nomic-embed-text", log=False)
 embeddings = OllamaEmbeddings(model="nomic-embed-text")
 
+# Configuração do ChromaDB
 vector_store = Chroma(
     persist_directory="./db/chroma_db",
     embedding_function=embeddings,
     collection_name="steam_games",
 )
 
-# 2. Configuração do LLM e Logger
-llm = ChatOllama(model="gemma3", temperature=0.3)
-logger = ChatLogger()
 
-chat_history = []
+class Chatbot:
+    chat_history = []
 
-print("Assistente de Games pronto! Digite 'sair' para encerrar.\n")
+    def __init__(self, logger: "ChatLogger"):
+        self.chat_history = logger.restore_history() if logger else []
 
-# 3. Loop principal
-while True:
-    pergunta = input("Você: ").strip()
+    @staticmethod
+    def process_context(input):
+        """Processa o contexto dinâmico gerado com os documentos relevantes."""
 
-    if not pergunta:
-        continue
+        # Busca Vetorial no ChromaDB
+        relevant_docs = vector_store.similarity_search(input, k=4)
 
-    if pergunta.lower() == "sair":
-        break
+        # Formata o contexto recuperado com os textos e metadados
+        dinamic_contexts = ""
+        for doc in relevant_docs:
+            meta = doc.metadata
+            dinamic_contexts += (
+                f"Preço: R${meta.get('price', 'N/A')} | "
+                f"Metacritic: {meta.get('metacritic', 'N/A')} | "
+                f"Avaliações (+/{meta.get('positive_reviews')}, -/{meta.get('negative_reviews')})\n"
+                f"{doc.page_content}\n"
+                f"{'-' * 40}\n"
+            )
 
-    # Busca Vetorial no ChromaDB
-    docs_relevantes = vector_store.similarity_search(pergunta, k=4)
+        return dinamic_contexts
 
-    # Formata o contexto recuperado com os textos e metadados
-    contexto_dinamico = ""
-    for doc in docs_relevantes:
-        meta = doc.metadata
-        contexto_dinamico += (
-            f"Preço: R${meta.get('price', 'N/A')} | "
-            f"Metacritic: {meta.get('metacritic', 'N/A')} | "
-            f"Avaliações (+/{meta.get('positive_reviews')}, -/{meta.get('negative_reviews')})\n"
-            f"{doc.page_content}\n"
-            f"{'-' * 40}\n"
-        )
+    @staticmethod
+    def process_rag(input):
+        """Processa a pergunta do usuário, gera o contexto e retorna a resposta do LLM."""
 
-    # Prompt dinâmico gerado com o contexto recuperado
-    system_prompt = f"""Você é um especialista e assistente de banco de dados de jogos com base no contexto abaixo."
----
-DADOS RECUPERADOS DO BANCO DE DADOS:
-{contexto_dinamico}
----"""
+        # Processa o contexto dinâmico
+        dynamic_context = Chatbot.process_context(input)
 
-    # --- MONTAGEM E ENVIO DAS MENSAGENS ---
-    sys_msg = SystemMessage(content=system_prompt)
-    usr_msg = HumanMessage(content=pergunta)
+        # Prompt dinâmico gerado com o contexto recuperado
+        system_prompt = f"\
+            Você é um especialista e assistente de banco de dados de jogos com base no contexto abaixo.\
+            {dynamic_context}\
+        "
 
-    # Combina SystemPrompt (com contexto atualizado), histórico limitado e a pergunta atual
-    all_messages = [sys_msg] + chat_history[-6:] + [usr_msg]
+        # --- MONTAGEM E ENVIO DAS MENSAGENS ---
+        sys_msg = SystemMessage(content=system_prompt)
+        usr_msg = HumanMessage(content=input)
 
-    # Filtro de segurança para objetos de mensagem válidos
-    payload_messages = [msg for msg in all_messages if isinstance(msg, BaseMessage)]
+        # Combina SystemPrompt (com contexto atualizado), histórico limitado e a pergunta atual
+        all_messages = [sys_msg] + Chatbot.chat_history[-6:] + [usr_msg]
 
-    logger.add_message("user", pergunta)
+        # Filtro de segurança para objetos de mensagem válidos
+        payload_messages = [msg for msg in all_messages if isinstance(msg, BaseMessage)]
 
-    print("\nBot: ", end="")
-    complete_answer = ""
+        complete_answer = ""
 
-    # Streaming da resposta do Ollama
-    for chunk in llm.stream(payload_messages):
-        content_answer = chunk.content
-        complete_answer += content_answer
-        print(content_answer, end="", flush=True)
+        # Streaming da resposta do Ollama
+        for chunk in llm.stream(payload_messages):
+            content_answer = chunk.content
+            complete_answer += str(content_answer)
 
-    print("\n")
+        # Atualiza o histórico e logger
+        Chatbot.chat_history.append(usr_msg)
+        Chatbot.chat_history.append(AIMessage(content=complete_answer))
 
-    # Atualiza o histórico e logger
-    chat_history.append(usr_msg)
-    chat_history.append(AIMessage(content=complete_answer))
-    logger.add_message("assistant", complete_answer)
+        return complete_answer

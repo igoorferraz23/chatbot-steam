@@ -1,30 +1,32 @@
-# 🎮 Steam Assistant RAG
+# 🎮 Steam Assistant RAG API
 
-Assistente inteligente em Python para buscar e recomendar jogos da Steam utilizando **RAG**, **ChromaDB** e **IA local**.
+Assistente inteligente em Python para buscar e recomendar jogos da Steam usando **IA local**, agora disponível através de uma **API REST com FastAPI**.
+
+O projeto utiliza **RAG (Retrieval-Augmented Generation)** para consultar jogos armazenados no **ChromaDB** e gerar respostas contextualizadas via **Ollama**, com suporte a histórico de conversas e sem custos de API.
 
 ## 🛠️ Tecnologias
 
-* Python 3.12+
-* LangChain
-* ChromaDB
-* Ollama
+* **Python 3.12+**
+* **FastAPI + Uvicorn** — API REST e servidor ASGI
+* **LangChain** — orquestração do fluxo RAG
+* **ChromaDB** — banco de dados vetorial
+* **Ollama** — `gemma3` para geração e `nomic-embed-text` para embeddings
+* **Pandas** — tratamento dos dados
 
-  * `gemma3` — LLM
-  * `nomic-embed-text` — Embeddings
-* Pandas
+## 🚀 Como executar
 
-## 🚀 Como Rodar
+### 1. Instalar os modelos do Ollama
 
-### 1. Ollama
-
-Com o Ollama instalado e rodando:
+Certifique-se de que o Ollama está instalado e em execução:
 
 ```bash
 ollama pull gemma3
 ollama pull nomic-embed-text
 ```
 
-### 2. Ambiente Python
+### 2. Configurar o ambiente Python
+
+Crie e ative um ambiente virtual:
 
 ```bash
 python -m venv .venv
@@ -50,28 +52,31 @@ pip install -r requirements.txt
 
 ### 3. Gerar o banco vetorial
 
-Execute:
+Coloque o arquivo `games.csv` dentro da pasta `data/` e execute:
 
 ```bash
 python ingest.py
 ```
 
-### 4. Iniciar o assistente
+### 4. Iniciar a API
 
 ```bash
-python chatbot.py
+uvicorn api:app --reload --port 8000
 ```
 
-## 💬 Comandos
+## 🌐 API e documentação
 
-* `sair` — Encerra o assistente.
+Após iniciar o servidor, acesse a documentação interativa do FastAPI:
 
-## 🧠 Arquitetura
+**Swagger UI:** `http://127.0.0.1:8000/docs`
 
-```text
-games.csv → Pandas → Embeddings → ChromaDB
-                                      ↓
-Usuário → Retriever → Gemma 3 → Resposta
+### Exemplo — `POST /api/v1/chat`
+
+```json
+{
+  "message": "Me recomende jogos de RPG com boa história",
+  "session_id": "opcional-id-da-sessao"
+}
 ```
 
-O projeto utiliza RAG para recuperar informações relevantes da base de jogos antes de gerar cada resposta.
+O `session_id` permite manter o histórico de uma conversa.
