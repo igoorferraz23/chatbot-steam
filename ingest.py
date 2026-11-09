@@ -1,13 +1,27 @@
-import os
+import sys
 import time
 from datetime import datetime
 
 import pandas as pd
-from langchain_chroma import Chroma
 from langchain_core.documents import Document
-from langchain_ollama import OllamaEmbeddings
 
+from config import Settings
+from utils.chroma_db import ChromaDB
+from utils.ollama import Ollama
 from utils.tools import Tools
+
+# Verificações iniciais antes de iniciar o processo de ingestão
+print(f"[{datetime.now().strftime('%H:%M:%S')}] Iniciando verificações iniciais...")
+
+check_db = ChromaDB()
+if check_db.check():
+    sys.exit(
+        f"[{datetime.now().strftime('%H:%M:%S')}] O banco de dados já contém registros. Abortando o processo para evitar duplicação."
+    )
+
+ollama = Ollama()
+if not ollama.check():
+    sys.exit(f"[{datetime.now().strftime('%H:%M:%S')}] O Ollama não está instalado ou acessível. Abortando o processo.")
 
 # Principais colunas
 colunas_chave = [
@@ -29,14 +43,18 @@ colunas_chave = [
 print(f"[{datetime.now().strftime('%H:%M:%S')}] Iniciando carregamento do CSV...")
 
 # 1. Carrega os dados do CSV e filtra apenas as colunas necessárias
-df = pd.read_csv("data/games.csv", index_col=False)[colunas_chave]
+df = pd.read_csv(Settings.CSV_PATH, index_col=False)[colunas_chave]
 
-# Garante a conversão dos IDs para int
+if df.empty:
+    sys.exit(
+        f"[{datetime.now().strftime('%H:%M:%S')}] O CSV está vazio ou não contém as colunas esperadas. Abortando o processo."
+    )
+
+## Garante a conversão dos IDs para int
 df["AppID"] = df["AppID"].fillna(0)
 
-# Preenche os valores nulos com "Não informado"
+## Preenche os valores nulos com "Não informado"
 df = df.fillna("Não informado")
-
 
 # 2. Cria a lista de documentos
 documents = [
@@ -63,26 +81,13 @@ documents = [
     for _, row in df.iterrows()
 ]
 
-# 3. Download local do modelo de embeddings da Ollama.
-Tools.download_ollama_model("nomic-embed-text")
-
-# 4. Inicializa os Embeddings
-embeddings = OllamaEmbeddings(model="nomic-embed-text")
-
-# Garante a existência do diretório
-os.makedirs("./db/chroma_db", exist_ok=True)
-
 # 5. Inserção em Lotes (Batching) no ChromaDB
 print(f"[{datetime.now().strftime('%H:%M:%S')}] Vetorizando {len(documents)} documentos...")
 
-batch_size = 500  # Processa de 500 em 500 para evitar sobrecarga
+batch_size = Settings.INGEST_BATCH_SIZE  # Para evitar sobrecarga
 total_batches = (len(documents) - 1) // batch_size + 1
 
-vector_store = Chroma(
-    embedding_function=embeddings,
-    persist_directory="./db/chroma_db",
-    collection_name="steam_games",
-)
+vector_store = check_db.vector_store
 
 for i in range(0, len(documents), batch_size):
     batch = documents[i : i + batch_size]
@@ -105,4 +110,6 @@ for i in range(0, len(documents), batch_size):
     if not success:
         print(f" [X] Falha crítica no lote {batch_number}. Pulando lote para continuar o processo.")
 
-print(f"[{datetime.now().strftime('%H:%M:%S')}] Processo finalizado com sucesso em './db/chroma_db'!")
+print(
+    f"[{datetime.now().strftime('%H:%M:%S')}] Processo finalizado com sucesso. Total de documentos vetorizados: {len(documents)}."
+)

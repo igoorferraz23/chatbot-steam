@@ -2,17 +2,20 @@ import json
 import os
 from datetime import datetime
 
+from config import Settings
+
 
 class ChatLogger:
-    def __init__(self, session_id: str = None, log_dir: str = "chats"):
-        self.log_dir = log_dir
+    def __init__(self, session_id: str = None, source: str = "chats"):
+        """Define o caminho do arquivo de log."""
+        self.log_path = Settings.LOG_PATH
 
         # Garante que a pasta chats/ existe
-        os.makedirs(self.log_dir, exist_ok=True)
+        os.makedirs(self.log_path, exist_ok=True)
 
         # Define o caminho do arquivo JSON baseado na sessão
         self.session_id = session_id
-        self.filepath = os.path.join(self.log_dir, f"chat_{self.session_id}.json")
+        self.filepath = os.path.join(self.log_path, f"{source}_{self.session_id}.json")
 
     def log_interaction(self, user_input: str, bot_response: str):
         """Salva uma nova interação dentro do histórico da sessão."""

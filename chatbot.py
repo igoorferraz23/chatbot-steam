@@ -1,23 +1,21 @@
-from langchain_chroma import Chroma
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 from langchain_ollama import ChatOllama, OllamaEmbeddings
 
 from utils.chat_logger import ChatLogger
-from utils.tools import Tools
+from utils.chroma_db import ChromaDB
+from utils.ollama import Ollama
+
+from config import Settings
 
 # Configuração do LLM e Logger
-llm = ChatOllama(model="gemma3", temperature=0.3)
+llm = ChatOllama(model=Settings.LLM_MODEL, temperature=Settings.LLM_TEMPERATURE)
 
 # Configuração do Embeddings
-Tools.download_ollama_model("nomic-embed-text", log=False)
-embeddings = OllamaEmbeddings(model="nomic-embed-text")
+ollama = Ollama()
 
 # Configuração do ChromaDB
-vector_store = Chroma(
-    persist_directory="./db/chroma_db",
-    embedding_function=embeddings,
-    collection_name="steam_games",
-)
+chroma_db = ChromaDB()
+vector_store = chroma_db.vector_store
 
 
 class Chatbot:
@@ -56,7 +54,7 @@ class Chatbot:
 
         # Prompt dinâmico gerado com o contexto recuperado
         system_prompt = f"\
-            Você é um especialista e assistente de banco de dados de jogos com base no contexto abaixo.\
+            Você é um especialista e assistente de banco de dados de jogos apenas com base no contexto abaixo e responde em português brasileiro de forma resumida.\
             {dynamic_context}\
         "
 

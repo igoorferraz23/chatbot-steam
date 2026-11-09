@@ -31,6 +31,28 @@ def health_check():
     return {"status": "ok", "message": "API de recomendação de jogos da Steam está online."}
 
 
+@app.get("/api/v1/health/db")
+def health_check_db():
+    """Endpoint para verificar a saúde do banco de dados ChromaDB."""
+    from utils.chroma_db import ChromaDB
+
+    chroma_db = ChromaDB()
+    if not chroma_db.check():
+        return {"status": "error", "message": "Banco de dados ChromaDB não está acessível ou vazio."}
+    return {"status": "ok", "message": "Banco de dados ChromaDB acessível."}
+
+
+@app.get("/api/v1/health/ollama")
+def health_check_ollama():
+    """Endpoint para verificar a saúde do serviço Ollama."""
+    from utils.ollama import Ollama
+
+    ollama = Ollama()
+    if not ollama.check():
+        return {"status": "error", "message": "Serviço Ollama não está acessível."}
+    return {"status": "ok", "message": "Serviço Ollama acessível."}
+
+
 @app.post("/api/v1/chat", response_model=ChatResponse)
 def chat_endpoint(payload: ChatRequest):
     """Endpoint principal para receber mensagens, consultar e retornar a resposta."""
