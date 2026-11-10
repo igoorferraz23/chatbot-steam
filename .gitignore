@@ -14,11 +14,11 @@ __pycache__/
 .DS_Store
 
 # Ignora o banco de dados
-db/chroma_db/
+chroma_db/
 
 # Ignora os logs de chats
-chats/*
+logs/
 
 # Permite a criação dos diretórios
-!chats/.gitkeep
-!db/.gitkeep
+!logs/.gitkeep
+!chroma_db/.gitkeep

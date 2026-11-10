@@ -10,7 +10,7 @@ class Settings:
 
     # Configuração do LLM
     LLM_MODEL = "gemma3"
-    LLM_TEMPERATURE = 0.3
+    LLM_TEMPERATURE = 0.7
 
     # Configuração do Logger
     LOG_PATH = "./logs"
