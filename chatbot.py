@@ -8,7 +8,7 @@ from utils.ollama import Ollama
 from config import Settings
 
 # Configuração do LLM e Logger
-llm = ChatOllama(model=Settings.LLM_MODEL, temperature=Settings.LLM_TEMPERATURE)
+llm = ChatOllama(model=Settings.LLM_MODEL, base_url=Settings.OLLAMA_BASE_URL, temperature=Settings.LLM_TEMPERATURE)
 
 # Configuração do Embeddings
 ollama = Ollama()
@@ -29,7 +29,7 @@ class Chatbot:
         """Processa o contexto dinâmico gerado com os documentos relevantes."""
 
         # Busca Vetorial no ChromaDB
-        relevant_docs = vector_store.similarity_search(input, k=4)
+        relevant_docs = vector_store.similarity_search(input, k=20)
 
         # Formata o contexto recuperado com os textos e metadados
         dinamic_contexts = ""
@@ -53,10 +53,25 @@ class Chatbot:
         dynamic_context = Chatbot.process_context(input)
 
         # Prompt dinâmico gerado com o contexto recuperado
-        system_prompt = f"\
-            Você é um especialista e assistente de banco de dados de jogos apenas com base no contexto abaixo e responde em português brasileiro de forma resumida.\
-            {dynamic_context}\
-        "
+        system_prompt = f"""
+            Você é o Steam Assistant, um assistente especializado em jogos eletrônicos.
+
+            Sua função é responder às perguntas dos usuários utilizando exclusivamente as informações disponíveis no contexto fornecido.
+
+            ### Diretrizes:
+            - Responda sempre em português brasileiro.
+            - Seja objetivo, claro e direto, evitando respostas desnecessariamente longas.
+            - Utilize somente informações presentes no contexto.
+            - Não invente dados, características, preços, avaliações ou informações sobre jogos.
+            - Caso uma informação não esteja disponível no contexto, informe que não possui dados suficientes para responder.
+            - Quando pertinente, compare jogos considerando preço, nota no Metacritic e avaliações dos usuários.
+            - Organize comparações em listas ou tabelas quando isso facilitar a compreensão.
+            - Não repita informações desnecessariamente.
+            - Se a pergunta não estiver relacionada a jogos ou às informações disponíveis, explique educadamente que seu domínio é o banco de dados de jogos.
+
+            ### Contexto disponível:
+            {dynamic_context}
+        """
 
         # --- MONTAGEM E ENVIO DAS MENSAGENS ---
         sys_msg = SystemMessage(content=system_prompt)

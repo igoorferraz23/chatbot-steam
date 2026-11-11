@@ -6,17 +6,17 @@ from config import Settings
 class Ollama:
     def __init__(self):
         # Download local do modelo de embeddings da Ollama.
+        self.client = ollama.Client(Settings.OLLAMA_BASE_URL)
         self.download_ollama_model(Settings.OLLAMA_EMBED_MODEL, log=True)
 
-    @staticmethod
-    def download_ollama_model(modelo: str, log: bool = True):
+    def download_ollama_model(self, modelo: str, log: bool = True):
         """Função para baixar o modelo de embeddings do Ollama"""
         try:
-            modelos_locais = [m.get("model", "") for m in ollama.list().get("models", [])]
+            modelos_locais = [m.get("model", "") for m in self.client.list().get("models", [])]
             if not any(modelo in m for m in modelos_locais):
                 if log:
                     print(f"[{datetime.now().strftime('%H:%M:%S')}] Baixando modelo '{modelo}'...")
-                ollama.pull(modelo)
+                self.client.pull(modelo)
                 if log:
                     print(f"[{datetime.now().strftime('%H:%M:%S')}] Modelo '{modelo}' instalado com sucesso!")
             else:
@@ -25,11 +25,10 @@ class Ollama:
         except Exception as e:
             print(f"Erro ao baixar o modelo: {e}")
 
-    @staticmethod
-    def check():
+    def check(self):
         """Verifica se o Ollama está instalado e acessível."""
         try:
-            ollama.list()
+            self.client.list()
             return True
         except Exception as e:
             print(f"Erro ao verificar o Ollama: {e}")

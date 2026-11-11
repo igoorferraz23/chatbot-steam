@@ -8,7 +8,7 @@ from config import Settings
 
 class ChromaDB:
     def __init__(self):
-        self.embeddings = OllamaEmbeddings(model=Settings.OLLAMA_EMBED_MODEL)
+        self.embeddings = OllamaEmbeddings(model=Settings.OLLAMA_EMBED_MODEL, base_url=Settings.OLLAMA_BASE_URL)
 
         # Garante a existência do diretório
         os.makedirs(Settings.CHROMA_DB_PATH, exist_ok=True)

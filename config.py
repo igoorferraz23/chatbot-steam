@@ -3,6 +3,7 @@ class Settings:
 
     # Configuração do Ollama
     OLLAMA_EMBED_MODEL = "nomic-embed-text"
+    OLLAMA_BASE_URL = "http://ollama:11434"
 
     # Configuração do ChromaDB
     CHROMA_DB_PATH = "./chroma_db"
